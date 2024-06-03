@@ -109,12 +109,13 @@ The previous steps result in some visualizations and seed-wise results. In order
 # TODOs
 
 1) Remove all the absolute paths
-2) Redo all plots one more time, after feedback (very small bug, affecting the results minusculy)
-3) Add instructions on adding the dataset path
-4) Rework the plotting step asap
-5) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
-6) Do one full trial run with IS, MB (not all models), FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
-7) Provide code on generating the gts?
-8) Update the description of the F1tenth dataset
+2) Forward the submodules
+3) Redo all plots one more time, after feedback (very small bug, affecting the results minusculy)
+4) Add instructions on adding the dataset path
+5) Rework the plotting step asap
+6) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
+7) Do one full trial run with IS, MB (not all models), FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
+8) Provide code on generating the gts?
+9) Update the description of the F1tenth dataset
 
-9) 
+10) 
