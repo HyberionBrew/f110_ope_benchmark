@@ -111,3 +111,5 @@ The previous steps result in some visualizations and seed-wise results. In order
 1) Remove all the absolute paths
 2) Redo all plots one more time, after feedback (very small bug)
 3) Add instructions on adding the dataset path
+4) Rework the plotting step asap
+5) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
