@@ -1,0 +1,13 @@
+name: f110_ope_benchmark
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8.18
+  - zarr=2.16.1
+  - tqdm
+  - numpy=1.22
+  - absl-py=2.0.0
+  - pytorch
+  - tensorboardX
+  - seaborn
