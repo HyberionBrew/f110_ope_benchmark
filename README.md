@@ -1,56 +1,53 @@
 Code to reproduce the real-world F110 OPE Benchmark.
 # Installation with Docker
-In the docker folder:
+
 ```
+cd docker
 docker build -t ubuntu-cuda:22.04.3 .
 ```
 
-```
-docker run --gpus all -it -v /path/on/host/experiments:/workspace/f110_ope_benchmark/experiments ubuntu-cuda:22.04.
 
+Modify the local volume to point to you local experiments folder (needs to be this repo!).
 ```
-
-# Installation
-
-First, initialize and pull the submodules, setting them to their correct branches (does this actually work, todo check!).
-```
-git submodule update --init --recursive --remote
-```
-Setup the conda environment.
-```
-conda env create -f environment.yml
+cd ..
+docker run --gpus all -it -v /home/fabian/msc/f110_dope/f110_ope_benchmark/experiments:/f110_ope_benchmark/experiments ubuntu-cuda:22.04.3
+conda activate f110_ope_benchmark
+cd f110_ope_benchmark/experiments/
 ```
 
-TODO! Add something on fetching the dataset
-
-Checkout the conda environment
+In the docker environment:
 ```
 conda activate f110_ope_benchmark
+cd f110_ope_benchmark/experiments/
 ```
-
-
-```
-pip install f1tenth_gym/
-```
-
-```
-pip install f1tenth_orl_dataset/
-```
-
-```
-pip install stochastic_ftg_agents/
-```
-
-```
-pip install ope_methods/
-```
-
+Now we are setup to run any of the below experiments!
 
 # Run the experiments
-Go into the experiments folder for all the following steps.
+Go into the experiments folder (in docker) for all the following steps.
 
 ```
 cd experiments
+```
+
+All output files will be available on the host machine in the experiments folder.
+The output products are names runs_mb, runs_iw and so on.
+
+## Model-Based
+
+Model-based OPE training and evaluation can be run with the following command:
+
+```
+bash mb_train_eval.bash
+```
+
+Results are placed into 'runs_mb'. Some visualizations and the final results are also available in that folder.
+
+## Importance Sampling
+
+In order to run IS:
+
+```
+bash iw_eval.bash
 ```
 
 ## Fitted-Q-Evaluation
@@ -82,25 +79,6 @@ python aggregate_fqe.py
 
 for each reward you are interested in.
 
-
-## Model-Based
-
-Model-based OPE training and evaluation can be run with the following command:
-
-```
-bash mb_train_eval.bash
-```
-
-Results are placed into 'runs_mb'. Some visualizations and the final results are also available in that folder.
-
-## Importance Sampling
-
-In order to run IS:
-
-```
-bash iw_eval.bash
-```
-
 ## Doubly Robust
 
 First, manually change the path to the fqe model in line 216 run_iw.py (just have to change once to the absolute location of fqe_runs).
@@ -118,14 +96,8 @@ The previous steps result in some visualizations and seed-wise results. In order
 
 # TODOs
 
-1) Remove all the absolute paths
-2) Forward the submodules
 3) Redo all plots one more time, after feedback (very small bug, affecting the results minusculy)
-4) Add instructions on adding the dataset path
 5) Rework the plotting step asap
 6) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
 7) Do one full trial run with IS, MB (not all models), FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
-8) Provide code on generating the gts?
 9) Update the description of the F1tenth dataset
-
-10) 
