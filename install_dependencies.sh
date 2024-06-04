@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create the Conda environment from the environment.yml file
-#conda env create -f environment.yml
+conda env create -f environment.yml
 
 # Initialize Conda for shell interaction
 eval "$(conda shell.bash hook)"
