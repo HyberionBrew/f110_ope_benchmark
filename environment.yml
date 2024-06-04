@@ -8,6 +8,6 @@ dependencies:
   - tqdm
   - numpy=1.22
   - absl-py=2.0.0
-  - pytorch=2.3.0=py3.8_cuda11.8_cudnn8.7.0_0
+  - pytorch-gpu=2.3.0
   - tensorboardX
   - seaborn
