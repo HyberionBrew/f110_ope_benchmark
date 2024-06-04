@@ -2,7 +2,8 @@ Code to reproduce the real-world F110 OPE Benchmark.
 # Installation with Docker
 
 ```
-cd docker
+git clone https://github.com/HyberionBrew/f110_ope_benchmark.git
+cd f110_ope_benchmark/docker
 docker build -t ubuntu-cuda:22.04.3 .
 ```
 
