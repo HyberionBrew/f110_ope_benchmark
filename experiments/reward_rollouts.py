@@ -74,7 +74,7 @@ def main(args):
     )
     #load the train, val and test indices
     #train_indices = np.load(os.path.join(save_path, "train_indices.npy"))
-    val_indices = np.load(os.path.join("/home/fabian/msc/f110_dope/ws_release/experiments/runs_mb", "val_indices.npy"))
+    val_indices = np.load(os.path.join("../data", "val_indices.npy"))
     #test_indices = np.load(os.path.join(save_path, "test_indices.npy"))
     #train_subset = Subset(behavior_dataset, train_indices)
     #test_subset = Subset(behavior_dataset, test_indices)
