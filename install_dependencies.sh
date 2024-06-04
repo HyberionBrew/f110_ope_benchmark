@@ -10,7 +10,7 @@ eval "$(conda shell.bash hook)"
 conda activate f110_ope_benchmark
 
 # Install the required packages
-pip install f1tenth_gym/
-pip install f1tenth_orl_dataset/
-pip install stochastic_ftg_agents/
-pip install ope_methods/
+pip install -e f1tenth_gym/
+pip install -e f1tenth_orl_dataset/
+pip install -e stochastic_ftg_agents/
+pip install -e ope_methods/
