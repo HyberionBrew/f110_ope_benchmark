@@ -1,4 +1,14 @@
 Code to reproduce the real-world F110 OPE Benchmark.
+# Installation with Docker
+In the docker folder:
+```
+docker build -t ubuntu-cuda:22.04.3 .
+```
+
+```
+docker run --gpus all -it -v /path/on/host/experiments:/workspace/f110_ope_benchmark/experiments ubuntu-cuda:22.04.
+
+```
 
 # Installation
 

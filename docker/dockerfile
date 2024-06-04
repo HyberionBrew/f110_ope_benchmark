@@ -8,9 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-dev \
+    zip \
+    unzip \
+    vim \ 
     && rm -rf /var/lib/apt/lists/*
 
-    RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh && \
     bash Miniconda3-latest-Linux-x86_64.sh -b -p /opt/conda && \
     rm Miniconda3-latest-Linux-x86_64.sh
 # Add conda to PATH
@@ -21,8 +24,37 @@ ENV PATH="/opt/conda/bin:$PATH"
 # install git
 # setup conda
 RUN conda init bash
+# Create the dataset directory
+RUN mkdir -p ~/.f110_rl_datasets
 
-RUN apt-get update && apt-get install -y git
+# Install gdown
+RUN pip install gdown
 
-# Activate the Conda environment
+# Download the file from Google Drive using gdown
+RUN gdown --id 1ryaq4F3hHIo_klvlj0KlkDBZ9Zd5qI0Q -O ~/.f110_rl_datasets/f110-real-stoch-v2.zip
+
+# Unzip the downloaded file
+RUN unzip ~/.f110_rl_datasets/f110-real-stoch-v2.zip -d ~/.f110_rl_datasets
+
+#RUN apt-get update && apt-get install -y git
+# dataset https://drive.google.com/file/d/1ryaq4F3hHIo_klvlj0KlkDBZ9Zd5qI0Q/view?usp=sharing
+RUN git clone https://github.com/HyberionBrew/f110_ope_benchmark.git
+
+RUN chmod +x f110_ope_benchmark/install_dependencies.sh
+RUN cd f110_ope_benchmark && git submodule update --init --recursive --remote
+# Install CUDA dependencies manually
+#RUN conda install -y -c nvidia cuda-toolkit=11.8
+#RUN pip install pytorch-gpu
+# Create the Conda environment using the environment.yml file
+RUN cat f110_ope_benchmark/environment.yml
+#RUN cd f110_ope_benchmark && conda env create -f environment.yml
+RUN conda create -y -n f110_ope_benchmark python=3.8 && \
+    /bin/bash -c "source /opt/conda/bin/activate f110_ope_benchmark && conda install -y -c pytorch -c nvidia pytorch==2.3.0 torchvision torchaudio pytorch-cuda=11.8"
+
+
+RUN cd f110_ope_benchmark && ./install_dependencies.sh 
+# also install environment.yaml into the conda environment
+RUN  /bin/bash -c "source /opt/conda/bin/activate f110_ope_benchmark && pip install seaborn tensorboardX"
+#&& echo "Dependencies installed"
+
 SHELL ["conda", "run", "-n", "pytorch-env", "/bin/bash", "-c"]
