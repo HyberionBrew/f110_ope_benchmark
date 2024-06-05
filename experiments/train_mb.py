@@ -214,62 +214,58 @@ def main(args):
     )
     
     ### Preprocess the dataset ###
+    #behavior_dataset = F110Dataset(
+    #    F110Env,
+    #    normalize_states=True,
+    #    normalize_rewards=False,
+        # remove_agents=  F110Env.eval_agents,
+        # sequence_length=horizon,
+        # remove_agents= [F110Env.eval_agents], # include all agents in the dataset
+    #)
     behavior_dataset = F110Dataset(
         F110Env,
         normalize_states=True,
         normalize_rewards=False,
-        # remove_agents=  F110Env.eval_agents,
-        # sequence_length=horizon,
-        # remove_agents= [F110Env.eval_agents], # include all agents in the dataset
+        train_only = True,
+       # only_agents = [args.agent],
     )
-
-    if args.split == "on-policy":
-        train_indices, test_indices, val_indices = ope_methods.dataset.random_split_trajectories(behavior_dataset)
-
-    elif args.split == "off-policy":
-        # todo!
-        train_model_names = np.unique(behavior_dataset.model_names)
-        train_model_names = np.array([name for name in train_model_names if name not in F110Env.eval_agents])
-        # pick 4 randomly for test set
-        test_model_names = np.random.choice(train_model_names, 0, replace=False)
-        train_model_names = np.array([name for name in train_model_names if name not in test_model_names])
-        train_indices, test_indices, val_indices = model_split_indices(
-            behavior_dataset,
-            train_model_names =train_model_names,
-            val_model_names=F110Env.eval_agents, 
-            test_model_names=test_model_names)
-
-    elif args.split == "off-family":
-        train_indices, test_indices, val_indices = ope_methods.dataset.family_split_indices(
-            behavior_dataset, validation_family_name="StochasticContinousFTGAgent")
-    else:
-        raise NotImplementedError
+    eval_dataset = F110Dataset(
+        F110Env,
+        normalize_states=True,
+        normalize_rewards=False,
+        only_agents = F110Env.eval_agents,
+        state_mean=behavior_dataset.state_mean,
+        state_std=behavior_dataset.state_std,
+        reward_mean=behavior_dataset.reward_mean,
+        reward_std=behavior_dataset.reward_std,
+    )
+    
 
     # save the indices
-    np.save(os.path.join(save_path, f"train_indices.npy"), train_indices)
-    np.save(os.path.join(save_path, "test_indices.npy"), test_indices)
-    np.save(os.path.join(save_path, "val_indices.npy"), val_indices)
+    #np.save(os.path.join(save_path, f"train_indices.npy"), train_indices)
+    #np.save(os.path.join(save_path, "test_indices.npy"), test_indices)
+    #np.save(os.path.join(save_path, "val_indices.npy"), val_indices)
 
     #print()
     #print(len(val_indices))
-    assert np.array([index not in test_indices for index in train_indices]).any()
-    assert np.array([index not in val_indices for index in train_indices]).any()
+    #assert np.array([index not in test_indices for index in train_indices]).any()
+    #assert np.array([index not in val_indices for index in train_indices]).any()
     # assert that none of the arrays is empty
-    assert len(train_indices) > 0
+    #assert len(train_indices) > 0
     # assert len(test_indices) > 0
     # assert len(val_indices) > 0
-    train_subset = Subset(behavior_dataset, train_indices)
-    test_subset = Subset(behavior_dataset, test_indices)
-    val_subset = Subset(behavior_dataset, val_indices)
+    #train_subset = Subset(behavior_dataset, train_indices)
+    #test_subset = Subset(behavior_dataset, test_indices)
+    #val_subset = Subset(behavior_dataset, val_indices)
     # testset
-    print("# of Agents in train set", len(np.unique(behavior_dataset.model_names[train_indices])), "indices", len(train_indices))
+    #print("# of Agents in train set", len(np.unique(behavior_dataset.model_names[train_indices])), "indices", len(train_indices))
     # of agents in valiadtion set
-    print("# of Agents in validation set", len(np.unique(behavior_dataset.model_names[val_indices])), "indices", len(val_indices))
-    print("overlap:", len(set(np.unique(behavior_dataset.model_names[train_indices])).intersection(set(np.unique(behavior_dataset.model_names[val_indices])))))
-    test_loader = DataLoader(test_subset, batch_size=256, shuffle=False)
-    val_loader = DataLoader(val_subset, batch_size=256, shuffle=False)
+    #print("# of Agents in validation set", len(np.unique(behavior_dataset.model_names[val_indices])), "indices", len(val_indices))
+    #print("overlap:", len(set(np.unique(behavior_dataset.model_names[train_indices])).intersection(set(np.unique(behavior_dataset.model_names[val_indices])))))
+    #test_loader = DataLoader(test_subset, batch_size=256, shuffle=False)
+    val_loader = DataLoader(eval_dataset, batch_size=256, shuffle=False)
 
-    train_loader = DataLoader(train_subset, batch_size=256, shuffle=True)
+    train_loader = DataLoader(behavior_dataset, batch_size=256, shuffle=True)
     inf_dataloader = get_infinite_iterator(train_loader)
     data_iter = iter(inf_dataloader)
 
@@ -327,7 +323,7 @@ def main(args):
         if i % args.eval_interval == 0:
             num_plot = 10
             model.set_device("cpu")
-            plot_validation_trajectories(behavior_dataset, model, F110Env, val_indices, num_plot, save_path=save_path, file_name=f"rollouts_{i}")
+            #plot_validation_trajectories(behavior_dataset, model, F110Env, val_indices, num_plot, save_path=save_path, file_name=f"rollouts_{i}")
 
             if args.save_model:
                 model.save(save_path, filename=f"model_{args.seed}_{i}.pth")
@@ -344,10 +340,10 @@ def main(args):
             writer.add_scalar(f"eval/std_mse_val", std_dev_mse_val, global_step=i)
 
 
-            val_mse = compute_mse_rollouts(behavior_dataset, model, F110Env, val_indices, rollouts=1)
-            writer.add_scalar(f"test/mse_trajectory_25", np.mean(val_mse[:25].numpy()), global_step=i)
-            writer.add_scalar(f"test/mse_trajectory_50", np.mean(val_mse[:50].numpy()), global_step=i)
-            writer.add_scalar(f"test/mse_trajectory_max", np.max(val_mse.numpy()), global_step=i)
+            #val_mse = compute_mse_rollouts(behavior_dataset, model, F110Env, val_indices, rollouts=1)
+            #writer.add_scalar(f"test/mse_trajectory_25", np.mean(val_mse[:25].numpy()), global_step=i)
+            #writer.add_scalar(f"test/mse_trajectory_50", np.mean(val_mse[:50].numpy()), global_step=i)
+            #writer.add_scalar(f"test/mse_trajectory_max", np.max(val_mse.numpy()), global_step=i)
             
 
             #test_mse = compute_mse_rollouts(behavior_dataset, model, F110Env, val_indices)
