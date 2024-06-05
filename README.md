@@ -95,9 +95,8 @@ bash dr_eval.bash
 The previous steps result in some visualizations and seed-wise results. In order to aggregate the results and generate overall plots and statistics, some sample code is provided in 'plot_results.py'. However, be aware that this code is under construction.
 
 # TODOs
-
-3) Redo all plots one more time, after feedback (very small bug, affecting the results minusculy)
-5) Rework the plotting step asap
+1) Rework the plotting step ASAP
+3) Redo all plots one more time (very small bug, affecting the results minusculy)
 6) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
 7) Do one full trial run with IS, MB (not all models), FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
 9) Update the description of the F1tenth dataset
