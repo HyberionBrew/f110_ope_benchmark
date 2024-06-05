@@ -2,7 +2,8 @@ Code to reproduce the real-world F110 OPE Benchmark.
 # Installation with Docker
 
 ```
-cd docker
+git clone https://github.com/HyberionBrew/f110_ope_benchmark.git
+cd f110_ope_benchmark/docker
 docker build -t ubuntu-cuda:22.04.3 .
 ```
 
@@ -11,8 +12,6 @@ Modify the local volume to point to you local experiments folder (needs to be th
 ```
 cd ..
 docker run --gpus all -it -v /home/fabian/msc/f110_dope/f110_ope_benchmark/experiments:/f110_ope_benchmark/experiments ubuntu-cuda:22.04.3
-conda activate f110_ope_benchmark
-cd f110_ope_benchmark/experiments/
 ```
 
 In the docker environment:
