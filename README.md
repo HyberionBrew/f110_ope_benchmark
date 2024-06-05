@@ -10,7 +10,6 @@ docker build -t ubuntu-cuda:22.04.3 .
 
 Modify the local volume to point to you local experiments folder (needs to be this repo!).
 ```
-cd ..
 docker run --gpus all -it -v /home/fabian/msc/f110_dope/f110_ope_benchmark/experiments:/f110_ope_benchmark/experiments ubuntu-cuda:22.04.3
 ```
 
