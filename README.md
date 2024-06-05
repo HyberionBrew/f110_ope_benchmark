@@ -76,14 +76,12 @@ In case the number of update steps has been changed a manual change in run_fqe i
 
 Results + Intermediate models are placed into 'fqe_runs_\[param-string\]'.
 
-Per agent estimation results are made available in a folder called 'results' at the bottom of the respective agents folder hierarchy.
-As these are per-agent results we still need to aggregate them, such that we have per-seed results. To do so modify and run:
+Per agent estimation, results are made available in a folder called 'results' at the bottom of the respective agent's folder hierarchy.
+As these are per-agent results we still need to aggregate them, such that we have per-seed results. To do so run:
 
 ```
 bash fqe_plot.bash
 ```
-
-for each reward you are interested in.
 
 ## Doubly Robust
 
