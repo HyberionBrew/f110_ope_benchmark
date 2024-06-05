@@ -211,12 +211,13 @@ def main(args):
                 discount=args.discount, 
                 logger=None)
             # load the model
-            try:
+            #try:
 
-                model_fqe.load(f"/home/fabian/msc/f110_dope/ws_release/experiments/runs_fqe_4_0.0001_0.005_1e-05_{args.target_reward}/QFitterDD/f110-real-stoch-v2/250/on-policy/{args.seed}/{agent}", i=190000)
-                print("Model loaded")
-            except:
-                continue
+            model_fqe.load(f"runs_fqe_0.0001_0.005_1e-05_{args.target_reward}/QFitterDD/f110-real-stoch-v2/250/on-policy/{args.seed}/{agent}", i=190000)
+            #    print("Model loaded")
+            #except:
+            #    print("Model could not be loaded")
+            #    continue
 
             #print("Loaded model: ", agent)
             actor = Agent().load(name=agent, no_print=True)

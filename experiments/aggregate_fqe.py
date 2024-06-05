@@ -1,7 +1,7 @@
 import os
 import json
-reward = "reward_min_act.json"
-def aggregate_results(directory):
+rewards = ["reward_min_act.json", "reward_progress.json", "reward_checkpoint.json", "reward_lifetime.json"]
+def aggregate_results(directory, reward):
     # Traverse the user-provided directory to find all seed subfolders
     for seed_folder in os.listdir(directory):
         seed_path = os.path.join(directory, seed_folder)
@@ -32,7 +32,11 @@ def aggregate_results(directory):
 
 
 # Replace "your_directory_path_here" with the path to the directory containing the seed subfolders
-directory_path = f"/home/fabian/msc/f110_dope/ws_release/experiments/runs_fqe_4_0.0001_0.005_1e-05_{reward}/QFitterDD/f110-real-stoch-v2/250/on-policy"
-aggregate_results(directory_path)
+
+for reward in rewards:
+    directory_path = f"runs_fqe_0.0001_0.005_1e-05_{reward}/QFitterDD/f110-real-stoch-v2/250/on-policy"
+    aggregate_results(directory_path, reward)
+    directory_path = f"runs_fqe_0.0001_0.005_1e-05_{reward}/QFitterL2/f110-real-stoch-v2/250/on-policy"
+    aggregate_results(directory_path, reward)
 
 print("Aggregation complete.")

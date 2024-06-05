@@ -8,7 +8,7 @@ iterations=25
 
 # List of dynamics models
 # 
-dynamics_models=("AutoregressiveDeltaModel" "EnsembleARDModel" "EnsembleARModel" "EnsembleSDModel" "SimpleDynamicsModel" "DeltaDynamicsModel" "ProbDynamicsModel" "ProbsDeltaDynamicsModel" "AutoregressiveModel" "EnsemblePDDModel" ) #  #( "DeltaDynamicsModel" ) # "ProbsDeltaDynamicsModel" )
+dynamics_models=("AutoregressiveDeltaModel" "SimpleDynamicsModel" "DeltaDynamicsModel" "ProbDynamicsModel" "ProbsDeltaDynamicsModel" "AutoregressiveModel" "EnsembleSDModel" "EnsemblePDDModel" "EnsembleARModel" "EnsembleARDModel") #  #( "DeltaDynamicsModel" ) # "ProbsDeltaDynamicsModel" )
 
 # Loop over each dynamics model
 for dynamics_model in "${dynamics_models[@]}"

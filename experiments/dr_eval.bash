@@ -10,7 +10,7 @@ for reward in "${rewards[@]}"; do
     for iw_type in "${iw_types[@]}"; do
         for ext in "${exts[@]}"; do
             # Skip the iteration if iw_type is wis_termination since it's commented out
-            for seed in {0..0}; do
+            for seed in {1..3}; do
                 echo "Running for reward=$reward, iw_type=$iw_type, ext=$ext"
                 python run_iw.py --save --iw_type="$iw_type" --ext="$ext" --target_reward="$reward" --seed="$seed" --dr
                 python create_plots_iw_gt.py --ext="$ext" --iw_type="$iw_type" --target_reward="$reward" --seed="$seed" --dr

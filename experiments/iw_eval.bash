@@ -2,7 +2,7 @@
 
 # Define arrays of iw_types, exts, and target_rewards
 iw_types=( "step_wis_termination" "phwis_heuristic" "phwis" "step_wis" "simple_is" "simple_step_is" "cobs_wis")
-exts=("zero") # also accepts "mean" and "minus_inf" (this is in log! so zero means prob 1)
+exts=("zero" "mean") # also accepts "mean" and "minus_inf" (this is in log! so zero means prob 1), mean and zero are generally equivalent except for specific cases
 rewards=("reward_checkpoint.json" "reward_lifetime.json" "reward_min_act.json" "reward_progress.json" ) # "reward_progress.json" 
 
 # Loop over rewards, iw_types, and exts

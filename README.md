@@ -65,6 +65,14 @@ After training running evaluation:
 bash fqe_eval.bash
 ```
 
+The output artifacts we generated for FQE can also be downloaded like this (skipping the two above steps):
+
+```
+gdown --id 1Rv0mZOQwh3HDDNW4ZveaMHaHxfPVYi8a -O /f110_ope_benchmark/experiments/runs_fqe.zip
+unzip /f110_ope_benchmark/experiments/runs_fqe.zip -d /f110_ope_benchmark/experiments/
+```
+
+
 In case the number of update steps has been changed a manual change in run_fqe is required, where the fqe model is loaded.
 
 Results + Intermediate models are placed into 'fqe_runs_\[param-string\]'.
@@ -73,14 +81,17 @@ Per agent estimation results are made available in a folder called 'results' at 
 As these are per-agent results we still need to aggregate them, such that we have per-seed results. To do so modify and run:
 
 ```
-python aggregate_fqe.py
+bash fqe_plot.bash
 ```
 
 for each reward you are interested in.
 
 ## Doubly Robust
 
-First, manually change the path to the fqe model in line 216 run_iw.py (just have to change once to the absolute location of fqe_runs).
+For DR we need FQE models. These are included if you chose to download the fqe artifacts. 
+
+Manually change the path to the fqe model in line 216 run_iw.py, if the  (just have to change once to the absolute location of fqe_runs).
+
 
 Then execute:
 
@@ -94,8 +105,9 @@ bash dr_eval.bash
 The previous steps result in some visualizations and seed-wise results. In order to aggregate the results and generate overall plots and statistics, some sample code is provided in 'plot_results.py'. However, be aware that this code is under construction.
 
 # TODOs
-1) Rework the plotting step ASAP
 3) Redo all plots one more time (very small bug, affecting the results minusculy)
 6) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
-7) Do one full trial run with IS, MB (not all models), FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
+a) add MB data
+b) add IS data
+7) Do one full trial run with FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
 9) Update the description of the F1tenth dataset
