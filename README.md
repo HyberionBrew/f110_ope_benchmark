@@ -99,12 +99,11 @@ bash dr_eval.bash
 
 # Plotting and Visualization
 
-The previous steps result in some visualizations and seed-wise results. In order to aggregate the results and generate overall plots and statistics, some sample code is provided in 'plot_results.py'. However, be aware that this code is under construction.
+Take a look at the notebook: `final_results.ipynb`
 
 # TODOs
-3) Redo all plots one more time (very small bug, affecting the results minusculy)
-6) Add existing data to be downloaded such that plotting can be done immediately without running all the other scripts
-a) add MB data
-b) add IS data
-7) Do one full trial run with FQE (only 1 seed and one agent), IS (DR) in a docker enviroment.
+3) Redo all plots and tables one more time (small bug, affecting the results slightly, but not changing trends as far as I took a look)
+a) add MB data download folder
+b) add IS data download folder
+7) Do one Trial run with FQE in the docker (only 1 seed and one or two agents)
 9) Update the description of the F1tenth dataset
