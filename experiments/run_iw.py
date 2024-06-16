@@ -30,7 +30,7 @@ def get_infinite_iterator(dataloader):
     
 
 parser = argparse.ArgumentParser(description='Run IW')
-iw_choices=[ "step_wis_termination" "phwis_heuristic" "phwis" "step_wis" "simple_is" "simple_step_is" "cobs_wis"]
+iw_choices=[ "step_wis_termination", "phwis_heuristic", "phwis", "step_wis" ,"simple_is","simple_step_is", "cobs_wis"]
 
 parser.add_argument('--iw_type', type=str, default="step_wis",choices=iw_choices, help="Type of importance sampling to use.")
 parser.add_argument('--target_reward', type=str, default="reward_progress.json", help="The target reward. See the associated bash script for valid values.")
