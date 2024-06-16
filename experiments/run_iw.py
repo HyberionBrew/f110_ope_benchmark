@@ -30,18 +30,16 @@ def get_infinite_iterator(dataloader):
     
 
 parser = argparse.ArgumentParser(description='Run IW')
+iw_choices=[ "step_wis_termination" "phwis_heuristic" "phwis" "step_wis" "simple_is" "simple_step_is" "cobs_wis"]
 
-
+parser.add_argument('--iw_type', type=str, default="step_wis",choices=iw_choices, help="Type of importance sampling to use.")
 parser.add_argument('--target_reward', type=str, default="reward_progress.json", help="The target reward. See the associated bash script for valid values.")
 parser.add_argument('--discount', type=float, default=0.99, help="The discount factor to compute the discounted rewards.")
 parser.add_argument('--save', action='store_true', help="Save the output as a file.")
 parser.add_argument('--plot', action='store_true', help="Create some result plots.")
-parser.add_argument('--log_prob_type', type=str, default="action", help="log prob type")
-parser.add_argument('--seed', type=int, default=-1, help="seed")
-parser.add_argument('--type', type=str, default="WeightedIS", help="type of importance sampling")
-parser.add_argument('--iw_type', type=str, default="step_wis", help="type of importance sampling")
-parser.add_argument('--ext', type=str, default="zero", help="extension")
-parser.add_argument('--dr', action='store_true', help="use DR method")
+parser.add_argument('--seed', type=int, default=-1, help="Seed, relevant for DR only.")
+parser.add_argument('--ext', type=str, default="zero", help="Extension method, can utilize 'mean' as well to compute PDWIS (Mean).")
+parser.add_argument('--dr', action='store_true', help="Use DR method, needs a pre-trained FQE model.")
 args = parser.parse_args()
 
 
@@ -112,7 +110,7 @@ def main(args):
     ### get the dataset ###
     training_dataset = F110Dataset(
         F110Env,
-        normalize_states=True, # no normalization needed, we just need states to compute first IW step
+        normalize_states=True,
         normalize_rewards=False,
         train_only=True,
     )
@@ -134,7 +132,6 @@ def main(args):
             reward_std=training_dataset.reward_std,
         )
         print(f"Loaded eval dataset for agent: {agent}")
-        # print(args.agent)
         if log_prob_type == "action":
             actor = Agent().load(name=agent, no_print=True)
             get_log_probs = partial(F110Env.get_target_log_probs, 
