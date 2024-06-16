@@ -61,36 +61,7 @@ def plot_rewards_new(ground_truth, computed, title = "Ground Truth vs Computed R
         plt.close()
 
 def main(args):
-    # load the dataset:
-    """
-    F110Env = gym.make("f110-real-stoch-v2",
-        encode_cyclic=True,
-        flatten_obs=True,
-        timesteps_to_include=(0,250),
-        use_delta_actions=True,
-        include_timesteps_in_obs = False,
-        set_terminals=True,
-        delta_factor=1.0,
-        reward_config="reward_progress.json",
-        include_pose_time_diff=False,
-        include_action_pose_time_diff = False,
-        include_time_obs = False,
-        include_progress=False,
-        set_previous_step_terminals=0,
-        use_compute_termination=True,
-        remove_cons_terminals=True,
-        **dict(name="f110-real-stoch-v2",
-            config = dict(map="Infsaal3", num_agents=1,
-            params=dict(vmin=0.0, vmax=2.0)),
-            render_mode="human")
-    )
-    dataset = F110Env.get_dataset()
-    #discounted = calculate_discounted_reward()
-    print(dataset["actions"].shape)
-    trajectories, action_trajectories, terminations, model_names = F110Env.compute_trajectories(dataset["observations"],dataset["actions"], dataset["terminals"], dataset["timeouts"], dataset["model_name"] )
-    """
 
-    # ins = "4" if args.fitter=="QFitterDD" else "5"
     target_path = f"runs_fqe_0.0001_0.005_1e-05_{args.target_reward}/{args.fitter}/f110-real-stoch-v2/250/on-policy/{args.seed}"
     print(target_path)
     target_rewards_folder = os.path.join(target_path, args.target_reward) #args.target_reward}"
@@ -139,6 +110,7 @@ def main(args):
     with open(f"{save_path}/{args.target_reward}", "w") as f:
         json.dump(compute_rewards, f)
     print(results_dict)
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Train model based approaches')
 
