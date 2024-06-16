@@ -100,10 +100,3 @@ bash dr_eval.bash
 # Plotting and Visualization
 
 Take a look at the notebook: `final_results.ipynb`
-
-# TODOs
-3) Redo all plots and tables one more time (small bug, affecting the results slightly, but not changing trends as far as I took a look)
-a) add MB data download folder
-b) add IS data download folder
-7) Do one Trial run with FQE in the docker (only 1 seed and one or two agents)
-9) Update the description of the F1tenth dataset
