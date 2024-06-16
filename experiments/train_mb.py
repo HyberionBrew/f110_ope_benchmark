@@ -25,15 +25,21 @@ def get_infinite_iterator(dataloader):
 
 parser = argparse.ArgumentParser(description='Train model based approaches')
 
+
+dynamics_models = (
+    "AutoregressiveDeltaModel", "SimpleDynamicsModel", "DeltaDynamicsModel", 
+    "ProbDynamicsModel", "ProbsDeltaDynamicsModel", "AutoregressiveModel", 
+    "EnsembleSDModel", "EnsemblePDDModel", "EnsembleARModel", "EnsembleARDModel"
+)
+
 parser.add_argument('--seed', type=int, default=0, help="seed")
 parser.add_argument('--eval_interval', type=int, default=5_000, help="eval interval")
-parser.add_argument('--update_steps', type=int, default=100_000, help='update steps')
-parser.add_argument('--split', type=str, default="off-policy", help="split")
-parser.add_argument('--dynamics_model', type=str, default="DeltaDynamicsModel", help="dynamics model")
-parser.add_argument('--train', action='store_true', help="train")
-parser.add_argument('--save_model', action='store_true', help="save model")
-parser.add_argument('--skip_eval', action='store_true', help="skip eval")
-parser.add_argument('--model_checkpoint', type=str, default=None, help="model checkpoint")
+parser.add_argument('--update_steps', type=int, default=100_000, help='Number of update steps')
+parser.add_argument('--dynamics_model', type=str, default="DeltaDynamicsModel", choices=dynamics_models, help="The possible dynamics models.")
+parser.add_argument('--train', action='store_true', help="Enable training.")
+parser.add_argument('--save_model', action='store_true', help="Save the model every eval interval.")
+parser.add_argument('--skip_eval', action='store_true', help="Skip evaluation step (after saving model).")
+parser.add_argument('--model_checkpoint', type=str, default=None, help="Load a model checkpoint.")
 args = parser.parse_args()
 
 def evaluate_model(loader, model):
@@ -180,16 +186,15 @@ def main(args):
         algo=args.dynamics_model,
         reward_name="reward_progress",
         dataset="f110-real-stoch-v2",
-        target_policy=args.split,
+        target_policy="off-policy",
         seed = args.seed,
     )
-    print(save_path)
+    print("Logging to :", save_path)
     import datetime
     now = datetime.datetime.now()
     time = now.strftime("%Y-%m-%d-%H-%M-%S")
     file_name = str(args.seed) + "_" + time
     writer = SummaryWriter(log_dir= os.path.join(save_path, file_name))
-    horizon = 25
 
     F110Env = gym.make("f110-real-stoch-v2",
         encode_cyclic=True,
@@ -213,15 +218,6 @@ def main(args):
             render_mode="human")
     )
     
-    ### Preprocess the dataset ###
-    #behavior_dataset = F110Dataset(
-    #    F110Env,
-    #    normalize_states=True,
-    #    normalize_rewards=False,
-        # remove_agents=  F110Env.eval_agents,
-        # sequence_length=horizon,
-        # remove_agents= [F110Env.eval_agents], # include all agents in the dataset
-    #)
     behavior_dataset = F110Dataset(
         F110Env,
         normalize_states=True,
@@ -229,6 +225,8 @@ def main(args):
         train_only = True,
        # only_agents = [args.agent],
     )
+    print("Loaded training dataset.")
+    
     eval_dataset = F110Dataset(
         F110Env,
         normalize_states=True,
@@ -239,33 +237,11 @@ def main(args):
         reward_mean=behavior_dataset.reward_mean,
         reward_std=behavior_dataset.reward_std,
     )
+    print("Loaded evaluation dataset.")
     
-
-    # save the indices
-    #np.save(os.path.join(save_path, f"train_indices.npy"), train_indices)
-    #np.save(os.path.join(save_path, "test_indices.npy"), test_indices)
-    #np.save(os.path.join(save_path, "val_indices.npy"), val_indices)
-
-    #print()
-    #print(len(val_indices))
-    #assert np.array([index not in test_indices for index in train_indices]).any()
-    #assert np.array([index not in val_indices for index in train_indices]).any()
-    # assert that none of the arrays is empty
-    #assert len(train_indices) > 0
-    # assert len(test_indices) > 0
-    # assert len(val_indices) > 0
-    #train_subset = Subset(behavior_dataset, train_indices)
-    #test_subset = Subset(behavior_dataset, test_indices)
-    #val_subset = Subset(behavior_dataset, val_indices)
-    # testset
-    #print("# of Agents in train set", len(np.unique(behavior_dataset.model_names[train_indices])), "indices", len(train_indices))
-    # of agents in valiadtion set
-    #print("# of Agents in validation set", len(np.unique(behavior_dataset.model_names[val_indices])), "indices", len(val_indices))
-    #print("overlap:", len(set(np.unique(behavior_dataset.model_names[train_indices])).intersection(set(np.unique(behavior_dataset.model_names[val_indices])))))
-    #test_loader = DataLoader(test_subset, batch_size=256, shuffle=False)
     val_loader = DataLoader(eval_dataset, batch_size=256, shuffle=False)
-
     train_loader = DataLoader(behavior_dataset, batch_size=256, shuffle=True)
+    
     inf_dataloader = get_infinite_iterator(train_loader)
     data_iter = iter(inf_dataloader)
 
@@ -278,6 +254,7 @@ def main(args):
     dynamics_model = build_dynamics_model(args.dynamics_model,
                                           min_state=min_states, 
                                           max_state=max_states)
+    
     ### Define the Model ### 
     model = F110ModelBased(F110Env, behavior_dataset.states.shape[1],
                 behavior_dataset.actions.shape[1],
@@ -295,7 +272,7 @@ def main(args):
                 weight_decay=1e-4,
                 target_reward="reward_progress.json",
                 logger=writer,)
-    # model.load(save_path, filename="model_20000.pth")
+
     if args.model_checkpoint is not None:
         model.load(save_path, args.model_checkpoint)
     
@@ -327,30 +304,12 @@ def main(args):
 
             if args.save_model:
                 model.save(save_path, filename=f"model_{args.seed}_{i}.pth")
-            if args.skip_eval: #and (args.update_steps - args.eval_interval > i): # do one evaluation at the end
+            if args.skip_eval:
                 continue
-
-            # compute the mse of the model on the test and validation set
-
-            #average_mse_test, std_dev_mse_test = evaluate_model(test_loader, model)
+            
             average_mse_val, std_dev_mse_val = evaluate_model(val_loader, model)
-            #writer.add_scalar(f"test/mse_single", average_mse_test, global_step=i)
             writer.add_scalar(f"eval/mse_single", average_mse_val, global_step=i)
-            #writer.add_scalar(f"eval/std_mse_test", std_dev_mse_test, global_step=i)
             writer.add_scalar(f"eval/std_mse_val", std_dev_mse_val, global_step=i)
 
-
-            #val_mse = compute_mse_rollouts(behavior_dataset, model, F110Env, val_indices, rollouts=1)
-            #writer.add_scalar(f"test/mse_trajectory_25", np.mean(val_mse[:25].numpy()), global_step=i)
-            #writer.add_scalar(f"test/mse_trajectory_50", np.mean(val_mse[:50].numpy()), global_step=i)
-            #writer.add_scalar(f"test/mse_trajectory_max", np.max(val_mse.numpy()), global_step=i)
-            
-
-            #test_mse = compute_mse_rollouts(behavior_dataset, model, F110Env, val_indices)
-            #writer.add_scalar(f"test/mse_trajectory_25", np.mean(test_mse[:25].numpy()), global_step=i)
-            #writer.add_scalar(f"test/mse_trajectory_50", np.mean(test_mse[:50].numpy()), global_step=i)
-            #writer.add_scalar(f"test/mse_trajectory_max", np.max(test_mse.numpy()), global_step=i)
-            # print(np.mean(test_mse.numpy()))
-                    #all_mse.append(mse)
 if __name__ == "__main__":
     main(args)

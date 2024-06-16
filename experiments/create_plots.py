@@ -15,7 +15,77 @@ from ope_methods.dataset import create_save_dir
 from f110_orl_dataset.plot_reward import calculate_discounted_reward, plot_rewards
 from scipy.stats import linregress
 from scipy.stats import spearmanr
+def plot_rewards_for_simulation(ground_truth, computed, title = "Ground Truth vs Computed Rewards", save_path = None, plot=False, method ='Computed Mean Reward' ):
+    # Combine the ground truth and computed dictionaries
+    import seaborn as sns
+    plt.rcParams.update({
+        'text.usetex': True, # set to False if no Latex installation available
+        'font.family': 'serif',
+    })
+    combined_data = []
+    red = ["pure_pursuit2_0.4_0.3_raceline4_0.3_0.5", "pure_pursuit2_0.44_0.3_raceline1_0.3_0.5"]
+    orange = ["StochasticContinousFTGAgent_0.8_2_0.7_0.03_0.1_5.0_0.3_0.5", "StochasticContinousFTGAgent_0.6_2_0.8_0.03_0.1_5.0_0.3_0.5", "StochasticContinousFTGAgent_0.5_2_0.7_0.03_0.1_5.0_0.3_0.5"]
+    red_data = []
+    orange_data = []
+    for agent_name, gt_values in ground_truth.items():
+        print(agent_name)
+        if agent_name in computed:
+            combined_data.append((gt_values['mean'], computed[agent_name]['mean'], agent_name))
+        if agent_name in red:
+            red_data.append((gt_values['mean'], computed[agent_name]['mean'], agent_name))
+        if agent_name in orange:
+            orange_data.append((gt_values['mean'], computed[agent_name]['mean'], agent_name))
+    # Sort by ground truth mean magnitude
+    combined_data.sort(key=lambda x: x[0])
 
+    # Separate data for plotting
+    gt_means = [x[0] for x in combined_data]
+    computed_means = [x[1] for x in combined_data]
+    labels = [x[2] for x in combined_data]
+    
+    orange_gt_means = [x[0] for x in orange_data]
+    orange_computed_means = [x[1] for x in orange_data]
+    orange_labels = [x[2] for x in orange_data]
+    
+    red_gt_means = [x[0] for x in red_data]
+    red_computed_means = [x[1] for x in red_data]
+    red_labels = [x[2] for x in red_data]
+    
+    # Plot
+    sns.set_theme(style="white")
+    plt.figure(figsize=(12, 6))
+    
+    plt.scatter(gt_means, computed_means, color='blue')
+    plt.scatter(orange_gt_means, orange_computed_means, color='orange', s=80)
+    plt.scatter(red_gt_means, red_computed_means, color='red', s=80)
+    print("..")
+    #for i, label in enumerate(labels):
+    #    plt.text(gt_means[i], computed_means[i], label, fontsize=9)
+    
+    # Fit a line
+    slope, intercept, r_value, p_value, std_err = linregress(gt_means, gt_means)
+    space = np.arange(0,max(gt_means)+3)
+    line = slope * np.array(space) + intercept
+    plt.plot(space, line, 'r') #label=f'y={slope:.2f}x+{intercept:.2f}\nR²={r_value**2:.2f}')
+    # fix the x and y axis to the ground truth
+    plt.xlim(5, max(gt_means)+1)
+    plt.ylim(5, max(max(gt_means), max(computed_means))+1)
+    plt.xlabel('Ground Truth Mean Reward', fontsize=20)
+    plt.ylabel(method, fontsize=20)
+    plt.title(title, fontsize=22)
+    # increase size of ticks to fonsize 15
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+    # plt.legend()
+    plt.grid(True)
+    if save_path:
+        plt.savefig(save_path)
+    if plot:
+        plt.show()
+    else:
+        plt.close()
+        
+        
 def plot_rewards(ground_truth, computed, title = "Ground Truth vs Computed Rewards", save_path = None, plot=False, method ='Computed Mean Reward' ):
     # Combine the ground truth and computed dictionaries
     combined_data = []
@@ -77,7 +147,7 @@ def plot_bars_from_dicts(dicts_list, dict_names, add_title="", save_path=None, p
     sns.set_theme(style="whitegrid")
     plt.figure(figsize=(10, 6))
 
-    print(r)
+    #print(r)
     for i, dict_name in enumerate(dict_names):
         for j, sub_key in enumerate(sub_keys):
             x_coord = r[i] + j * bar_width - (bar_width * (num_bars - 1) / 2)
@@ -180,6 +250,10 @@ def main(args):
     #print(f"Spearman Correlation Coefficient: {spearman_corr}, p-value: {p_value}")
     plot_rewards(ground_truth_rewards, compute_rewards, title=f"Reward: {args.target_reward}, {args.dynamics_model}, spearman_corr: {spearman_corr:.2f}, p-value: {p_value:.5f}",
                  save_path=f"{save_path}/results/reward_{args.target_reward[:-4]}_spearman_corr.png", plot=args.plot)
+    # For plotting the spearman correlation simulation plots in the thesis
+    #plot_rewards_for_simulation(ground_truth_rewards, compute_rewards, title=f"Checkpoint Reward", #Reward: {args.target_reward} (Sim)",
+    #                            save_path=f"{save_path}/results/reward_{args.target_reward[:-4]}_spearman_corr_sim.pdf", plot=args.plot, method="Simulation Mean Reward")
+    
     # compute the mse between gt and computed rewards
     abs = np.mean(np.abs((np.array(gt_means) - np.array(computed_means))))
     print(abs)

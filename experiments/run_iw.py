@@ -32,10 +32,10 @@ def get_infinite_iterator(dataloader):
 parser = argparse.ArgumentParser(description='Run IW')
 
 
-parser.add_argument('--target_reward', type=str, default="reward_progress.json", help="target reward")
-parser.add_argument('--discount', type=float, default=0.99, help="discount factor")
-parser.add_argument('--save', action='store_true', help="save model")
-parser.add_argument('--plot', action='store_true', help="plot results")
+parser.add_argument('--target_reward', type=str, default="reward_progress.json", help="The target reward. See the associated bash script for valid values.")
+parser.add_argument('--discount', type=float, default=0.99, help="The discount factor to compute the discounted rewards.")
+parser.add_argument('--save', action='store_true', help="Save the output as a file.")
+parser.add_argument('--plot', action='store_true', help="Create some result plots.")
 parser.add_argument('--log_prob_type', type=str, default="action", help="log prob type")
 parser.add_argument('--seed', type=int, default=-1, help="seed")
 parser.add_argument('--type', type=str, default="WeightedIS", help="type of importance sampling")
@@ -68,8 +68,8 @@ def compute_prob_trajectories(log_probs, finished, model_names, rewards):
 
 def main(args):
 
-
-    algo_name = f"iw_{args.log_prob_type}_{args.iw_type}_{args.ext}"
+    log_prob_type = "action"
+    algo_name = f"iw_{log_prob_type}_{args.iw_type}_{args.ext}"
     # add _dr if dr is used
     if args.dr:
         algo_name = algo_name + "_dr"
@@ -81,13 +81,11 @@ def main(args):
         target_policy="off-policy",
         seed = args.seed,
     )
-    print(save_path)
-    # append the args.agent to the save path
-    # save_path = os.path.join(save_path, args.agent) 
+    print("Logging to: ", save_path)
+
     import datetime
     now = datetime.datetime.now()
     time = now.strftime("%Y-%m-%d-%H-%M-%S")
-
 
     
     F110Env = gym.make("f110-real-stoch-v2",
@@ -110,54 +108,19 @@ def main(args):
             params=dict(vmin=0.0, vmax=2.0)),
             render_mode="human")
     )
-    # print(F110Env.keys)
+
     ### get the dataset ###
     training_dataset = F110Dataset(
         F110Env,
         normalize_states=True, # no normalization needed, we just need states to compute first IW step
         normalize_rewards=False,
-        #eval_only = True, # for testing, todo! change
-        #only_agents=["StochasticContinousFTGAgent_0.5_2_0.7_0.03_0.1_5.0_0.3_0.5"]
         train_only=True,
-        #only_agents = [args.agent],
     )
-    """
-    state_mean = torch.mean(states, axis=0)
-    #set the state mean of the cos and sin to zero, manual hack
-    state_mean[2] = 0.0
-    state_mean[3] = 0.0
-    state_std = torch.std(states, axis=0)
-    state_std[2] = 1.0
-    state_std[3] = 1.0
-    def normalize_states(self, states, keys=None):
-
-        indices = [self.obs_keys.index(key) for key in keys]
-
-        states_return = states.clone()
-        if len(states.shape) == 1:
-            states_return = states_return.unsqueeze(0)
-
-        for idx, key_idx in enumerate(indices):
-            states_return[..., idx] = (states_return[..., idx] - self.state_mean[key_idx]) / max(self.state_std[key_idx], 1e-8)
-
-        if len(states.shape) == 1:
-            states_return = states_return.squeeze(0)
-        return states_return
-    """
-    
+    print("Loaded training dataset")
     print("inital states training:", torch.sum(training_dataset.mask_inital))
 
-    #print(target_log_probs)
-    #print(training_dataset.log_probs)
-    
-
-    #print(training_dataset.next_actions[:20])
-    #print(training_dataset.actions[:20])
-    #exit()
-    ### done ###
-        #print(args)
     result_dict = {}
-    #for agent_num, agent in enumerate(["StochasticContinousFTGAgent_0.5_2_0.7_0.03_0.1_5.0_0.3_0.5"]):#enumerate(F110Env.eval_agents):
+    
     from tqdm import tqdm
     for agent_num, agent in tqdm(enumerate(F110Env.eval_agents)): 
         eval_dataset = F110Dataset(
@@ -170,8 +133,9 @@ def main(args):
             reward_mean=training_dataset.reward_mean,
             reward_std=training_dataset.reward_std,
         )
+        print(f"Loaded eval dataset for agent: {agent}")
         # print(args.agent)
-        if args.log_prob_type == "action":
+        if log_prob_type == "action":
             actor = Agent().load(name=agent, no_print=True)
             get_log_probs = partial(F110Env.get_target_log_probs, 
                                     actor=actor, 
@@ -183,17 +147,13 @@ def main(args):
 
             behavior_log_probs = training_dataset.log_probs.reshape(training_dataset.log_probs.shape[0], -1)
         
-        elif args.log_prob_type == "state":
-            raise NotImplementedError
 
         start_points = training_dataset.unnormalize_states(training_dataset.states[training_dataset.mask_inital])
         start_scans = training_dataset.scans[training_dataset.mask_inital]
         # need to transform the log probs and target probs to trajectories
         finished = training_dataset.finished
         start_points_eval =  training_dataset.unnormalize_states(eval_dataset.states[eval_dataset.mask_inital])
-        #print(np.sum(finished))
-        # terminations = training_dataset.terminations.numpy()
-
+        
         offset = 0.0
         train_rewards = training_dataset.rewards
         get_target_actions=None
@@ -205,40 +165,23 @@ def main(args):
                 num_atoms=101, 
                 min_reward=0.0, 
                 max_reward=100.0, 
-                critic_lr=100, #whatever, we dont train here
+                critic_lr=100, # no training anyways
                 weight_decay=1e-5,
                 tau = 0.005,
                 discount=args.discount, 
                 logger=None)
-            # load the model
-            #try:
+
 
             model_fqe.load(f"runs_fqe_0.0001_0.005_1e-05_{args.target_reward}/QFitterDD/f110-real-stoch-v2/250/on-policy/{args.seed}/{agent}", i=190000)
-            #    print("Model loaded")
-            #except:
-            #    print("Model could not be loaded")
-            #    continue
 
-            #print("Loaded model: ", agent)
             actor = Agent().load(name=agent, no_print=True)
+            print("Getting starting actions")
             get_target_actions = partial(F110Env.get_target_actions, actor=actor, 
                                 fn_unnormalize_states=training_dataset.unnormalize_states)
 
-            # maybe also sample the start actions? or take deterministic?
-            print("Getting starting actions")
-            #actions_eval = get_target_actions(start_points_eval, 
-            #                            scans = eval_dataset.scans[eval_dataset.mask_inital], 
-            #                            deterministic=False)
-            # send model to cuda
             
             model_fqe.set_device("cuda")
 
-            #offset, std_offset = model_fqe.estimate_returns(start_points_eval.cuda(), actions_eval.cuda())
-            #offset = offset.cpu().detach().numpy()
-            #print(offset.shape)
-            print("Finished estimating start points")
-            # maybe do this in a loop?
-            # create a batch of states and actions
             batch_size = 1000
             n_batches = len(training_dataset.states) // batch_size
             all_q_values = torch.zeros((len(training_dataset.states)))
@@ -249,13 +192,13 @@ def main(args):
                                                              get_q_vals=True)
                 all_q_values[i*batch_size:(i+1)*batch_size] = q_values
             q_values = all_q_values.cpu().detach().numpy()
-            #print("Finished Q-Estimation", q_values.shape)
+
             n_samples = 5
-            # print(training_dataset.states_next.device)
+
             print("Start Q-Estimation")
             all_sample_actions = []
             for s in range(n_samples):
-                #print(s)
+
                 all_next_actions = torch.zeros_like(training_dataset.actions)
                 for i in range(n_batches):
                     next_actions = get_target_actions(training_dataset.states_next[i*batch_size:(i+1)*batch_size], 
@@ -265,8 +208,7 @@ def main(args):
                 all_sample_actions.append(all_next_actions)
                 
             next_actions = all_sample_actions
-            # next action to first torch and then cuda
-            # next_actions = [next_action.cuda() for next_action in next_actions]
+
             print("Got next actions")
             all_next_q_values = np.zeros((len(training_dataset.states)))
             for i in range(n_batches):
@@ -286,35 +228,16 @@ def main(args):
         behavior_log_probs, terminations_behavior, behavior_agent_names, rewards = compute_prob_trajectories(behavior_log_probs, finished, training_dataset.model_names,train_rewards)
         target_log_probs, terminatons_target, _ , rewards = compute_prob_trajectories(target_log_probs, finished, ["target"]*len(target_log_probs), train_rewards)
 
-        # for the termination itself the value is still valid (not zero)
-        #print(terminatons_target)
-
-        #for i in range(behavior_log_probs.shape[0]):
-        #print(behavior_log_probs.shape)
         # clip behavior and target log_probs 
+        # this is done as in DOPE
         behavior_log_probs = np.clip(behavior_log_probs, -7, 2)
         target_log_probs = np.clip(target_log_probs, -7, 2)
-        #plt.plot(behavior_log_probs[0].sum(axis=1))
-        #plt.plot(target_log_probs[0].sum(axis=1))
-            # plt.plot(target_log_probs[4])
-        #plt.show()
-        #print(terminations_behavior)
-        # get minimum number of steps
-        
-        # TODO! add rescaling of log_probs? -> no longer principled? 
-        # sum the behavior log probs along axis 2
+
         behavior_log_probs = np.sum(behavior_log_probs, axis=2)
         target_log_probs = np.sum(target_log_probs, axis=2)
 
         trajectories, actions, terminations , model_names = F110Env.compute_trajectories(training_dataset.states, training_dataset.actions, training_dataset.finished,training_dataset.finished, training_dataset.model_names)
         min_idx = np.argmin(terminations)
-
-        #print(min_idx)
-        #print(terminations[min_idx])
-        #print(model_names[min_idx])
-        #exit()
-        # F110Env.plot_trajectories(trajectories, model_names, terminations)
-       
 
         reward = ImportanceSamplingContinousStart(behavior_log_probs, 
                                         target_log_probs, 
@@ -337,7 +260,7 @@ def main(args):
         
 
         reward = reward + offset
-        reward = reward # .numpy()
+        reward = reward
         print(f"Predicted {agent}: {reward}")
         result_dict[agent] = {"mean": reward, "std": 0.0}
         # break
@@ -346,16 +269,13 @@ def main(args):
         print(result_dict)
         plot_bars_from_dicts([result_dict], ["Rollouts"], f"Mean discounted reward {args.target_reward}",plot=True)
     # add result to the save path
-    path_res = "results" # + "" if args.seed== -1 else f"_{args.seed}"
+    path_res = "results"
     save_path = os.path.join(save_path, path_res)
     if args.save:
-        for target_reward in args.target_reward:
-         
-            if args.save:
-                if not os.path.exists(save_path):
-                    os.makedirs(save_path)
-                with open(os.path.join(save_path, f"{args.target_reward}"), 'w') as file:
-                    json.dump(result_dict, file)
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        with open(os.path.join(save_path, f"{args.target_reward}"), 'w') as file:
+            json.dump(result_dict, file)
                 
 
 # main
