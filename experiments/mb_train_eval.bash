@@ -25,7 +25,7 @@ do
         # Call train_mb.py (commented out, but included for reference)
 
         # Call reward_rollouts.py
-        python train_mb.py --dynamics_model=$dynamics_model --split=off-policy --train --save_model --update_steps=10_001 --seed=$seed --skip_eval
+        python train_mb.py --dynamics_model=$dynamics_model --train --save_model --update_steps=10_001 --seed=$seed --skip_eval
         # 
         python reward_rollouts.py --dynamics_model=$dynamics_model --split=off-policy --model_checkpoint=model_${seed}_10000.pth --target_reward reward_progress.json reward_lifetime.json reward_checkpoint.json reward_min_act.json --save --seed=$seed --rollouts_per_initial_state=1
         #python reward_rollouts.py --dynamics_model=$dynamics_model --split=off-policy --model_checkpoint=model_${seed}_10000.pth --target_reward reward_progress.json --save --seed=$seed --rollouts_per_initial_state=1
