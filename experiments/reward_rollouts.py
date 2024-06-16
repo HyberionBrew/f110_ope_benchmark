@@ -69,19 +69,11 @@ def main(args):
         F110Env,
         normalize_states=True,
         normalize_rewards=False,
-        # sequence_length=horizon,
-        # only_agents= [F110Env.eval_agents], # include all agents in the dataset
+        train_only = True,
+       # only_agents = [args.agent],
     )
-    #load the train, val and test indices
-    #train_indices = np.load(os.path.join(save_path, "train_indices.npy"))
-    val_indices = np.load(os.path.join("../data", "val_indices.npy"))
-    #test_indices = np.load(os.path.join(save_path, "test_indices.npy"))
-    #train_subset = Subset(behavior_dataset, train_indices)
-    #test_subset = Subset(behavior_dataset, test_indices)
-    #val_subset = Subset(behavior_dataset, val_indices)
-    #test_loader = DataLoader(test_subset, batch_size=256, shuffle=False)
-    #val_loader = DataLoader(val_subset, batch_size=256, shuffle=False)
-    # build dynamics model
+    
+ 
     from ope_methods.model_based import build_dynamics_model
 
 
@@ -111,11 +103,16 @@ def main(args):
     model.load(save_path, args.model_checkpoint)
 
     # for each agent in the dataset, estimate the returns from its specific starting positions
-    # build the trajectories from the dataset
-    print("Number of valdation transitions:", val_indices.shape)
-    print(args.target_reward)
-    val_dataset = behavior_dataset.get_only_indices(val_indices)
-    print(len(val_dataset))
+    val_dataset = F110Dataset(
+        F110Env,
+        normalize_states=True,
+        normalize_rewards=False,
+        only_agents = F110Env.eval_agents,
+        state_mean=behavior_dataset.state_mean,
+        state_std=behavior_dataset.state_std,
+        reward_mean=behavior_dataset.reward_mean,
+        reward_std=behavior_dataset.reward_std,
+    )
     # plot the val dataset
     # build trajectories
     starts = np.where(np.roll(val_dataset.finished, 1) == 1)[0]
@@ -127,12 +124,9 @@ def main(args):
     truncations = np.zeros((len(starts),))
     # empty strings of size len(starts)
     model_names = np.empty((len(starts),), dtype=object)
-    #print(val_dataset.finished)
 
     # build trajectories
     for i, (start, end) in enumerate(zip(starts, ends)):
-        #print(start,end)
-        #print(val_dataset.states[start:end+1].shape)
         trajectories[i, 0:end - start+ 1] = val_dataset.states[start:end+1]
         term = np.where(1.0 - val_dataset.masks[start:end+1])[0]
         if len(term )== 0:
@@ -141,15 +135,11 @@ def main(args):
         terminations[i] = int(term[0])
         truncations[i] = np.where(val_dataset.finished[start:end+1])[0][0]
         model_names[i] = val_dataset.model_names[start]
-        #trajectories.append(val_dataset.states[start:end+1])
-        #terminations.append(np.where(val_dataset.masks[start:end+1])[0])
-        #truncations.append(np.where(val_dataset.finished[start:end+1])[0])
-        #model_names.append(val_dataset.model_names[start])
+        
     model_names = np.array(model_names)
     # replace nones with ""
     model_names[model_names == None] = ""
-    # F110Env.plot_trajectories(trajectories,model_names, terminations, truncations)
-    # do rollouts and later compute the rewards
+
     from f110_agents.agent import Agent
     from functools import partial
     result_dict = {reward_function: {} for reward_function in args.target_reward}
@@ -165,9 +155,9 @@ def main(args):
                             fn_unnormalize_states=behavior_dataset.unnormalize_states)
         curr_trajectories = np.where(model_names == agent_name)[0]
         inital_states = trajectories[curr_trajectories,0,:]
-        # copy inital states 5 times
+        # copy inital states
         inital_states = np.repeat(inital_states, args.rollouts_per_initial_state, axis=0)
-        # unsqueeze the initial states at axis = 1
+
         
         inital_states = torch.tensor(np.expand_dims(inital_states, axis=1),dtype=torch.float32)
 
@@ -183,69 +173,13 @@ def main(args):
         # print the first 10 unnormalized states
         dict_rewards = {}
         for target_reward in args.target_reward:
-            #print(actions_rollout.shape)
-            #print(states_unnormalized.shape)
             dict_rewards[target_reward] = F110Env.compute_reward_trajectories(states_unnormalized,
                                             actions_rollout, 
                                             terminations_rollout, 
                                             reward_config=target_reward)
-        # plot the first 3 reward
-        """
-        import matplotlib.pyplot as plt
-        for t in args.target_reward:
-            print(target_reward)
-            print(dict_rewards[t].shape)
-            plot = 10
-            F110Env.plot_trajectories(states_unnormalized[:plot],np.array([agent_name]*plot), 
-                                      terminations_rollout[:plot], 
-                                      title = f"Rollouts {agent_name}")
-            for i in range(10):
-                plt.plot(dict_rewards[t][i,:])
-
-            plt.title(f"Reward {t}")
-            plt.show()
-        """
+       
         discount_factors = args.discount ** np.arange(horizon + 1)
         # unnormed_trajectories = behavior_dataset.unnormalize_states(torch.tensor(trajectories[curr_trajectories]))
-        if args.compute_gt:
-            raise DeprecationWarning("This part of the code is deprecated")
-           
-            #print(unnormed_trajectories[0:2,:3])
-            #import matplotlib.pyplot as plt
-            #to_plot = 3
-            #F110Env.plot_trajectories(states_unnormalized[:to_plot].squeeze().detach().numpy(),model_names[curr_trajectories][:to_plot], terminations_rollout[:to_plot], truncations_rollout[:to_plot], title = f"Rollouts {agent_name}")
-            #if args.compute_gt:
-            #    F110Env.plot_trajectories(unnormed_trajectories[:to_plot],model_names[curr_trajectories][:to_plot], terminations[curr_trajectories][:to_plot], truncations[curr_trajectories][:to_plot], title=f"Ground Truth {agent_name}")
-  
-            reward_gt = F110Env.compute_reward_trajectories(unnormed_trajectories,
-                                            actions_rollout, 
-                                            terminations[curr_trajectories], 
-                                reward_config= args.target_reward)
-            # plot the reward of the ground truth vs the rollouts
-            """
-            for i in range(3):
-                # calculate the gt discounted reward
-                discount_factors = args.discount ** np.arange(horizon + 1)
-                discounted_sum_gt = np.sum(reward_gt[i] * discount_factors)
-                print(discounted_sum_gt)
-                # same for the rollouts
-                discounted_sum_rollout = np.sum(reward[i] * discount_factors)
-                print(discounted_sum_rollout)
-
-                plt.plot(reward_gt[i], color = "red")
-                plt.plot(reward[i], color= "blue")
-                plt.legend(["Ground Truth", "Rollouts"])
-                plt.show()
-            """
-            discounted_sum_gt = np.sum(reward_gt *discount_factors, axis=1)
-            mean_reward_gt = np.mean(discounted_sum_gt)
-            std_reward_gt = np.std(discounted_sum_gt)
-            print("Mean reward gt:", mean_reward_gt)
-            print("Std reward gt:", std_reward_gt)
-            print("Max reward gt:", np.max(discounted_sum_gt))
-            print("Min reward gt:", np.min(discounted_sum_gt))
-            print(discounted_sum_gt )
-        # Create a discount factor array of shape (250,)
         
         # Calculate the sum of discounted rewards along axis 1
         for target_reward in args.target_reward:
@@ -260,23 +194,8 @@ def main(args):
 
             result_dict[target_reward][agent_name] = {"mean": mean_reward_rollouts,
                                     "std": std_reward_rollouts}
-        # print("Mean reward rollouts:", mean_reward_rollouts)
-        #print("Mean reward gt:", mean_reward_gt)
-        if args.plot:
-            if False:
-                print(discounted_sums)
-                print(states_unnormalized.shape)
-                print(model_names[curr_trajectories].shape)
-                F110Env.plot_trajectories(states_unnormalized,
-                                        model_names[curr_trajectories],
-                                        terminations_rollout,
-                                        title = f"Rollouts {agent_name}")
-                #if args.compute_gt:
-            #    F110Env.plot_trajectories(unnormed_trajectories,model_names[curr_trajectories], terminations[curr_trajectories], truncations[curr_trajectories], title=f"Ground Truth {agent_name}")
+
     print(result_dict)
-    # write the result dict to a file
-    # create a new directory results
-    # add "results" to save path
     save_path = os.path.join(save_path, "results")
     for target_reward in args.target_reward:
         if args.plot:
