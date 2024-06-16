@@ -87,9 +87,6 @@ bash fqe_plot.bash
 
 For DR we need FQE models. These are included if you chose to download the fqe artifacts. 
 
-Manually change the path to the fqe model in line 216 run_iw.py, if the  (just have to change once to the absolute location of fqe_runs).
-
-
 Then execute:
 
 ```
