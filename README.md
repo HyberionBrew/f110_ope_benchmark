@@ -1,4 +1,31 @@
 Code to reproduce the real-world F110 OPE Benchmark.
+
+# Known issue: batched pure pursuit agents (fixed in October 2026)
+
+The pure pursuit agents in `stochastic_ftg_agents` computed the lookahead point wrongly when called on a batch of states: every state in a batch used the lookahead offset of the first state of the batch. Single states, as used on the car and in the simulator while recording the datasets, were not affected, so the datasets, their `log_probs` and the ground truth are correct. All OPE methods (IS, DR, FQE and model-based) evaluate the target policies in batches, so the estimates for the 11 pure pursuit target policies in the original results used slightly wrong target actions and target log-probabilities (steering deltas off by a median of 0-0.003 rad and a 90th percentile of up to 0.035 rad, at most 0.54 rad). The follow-the-gap agents were not affected.
+
+The fix is on the `ope-benchmark` branch of `stochastic_ftg_agents`, which this repository uses. A quick re-run of two importance sampling estimators (seed 0) with and without the fix; the "old" numbers reproduce the results reported in the thesis, the metrics are computed as in `final_results.ipynb` (regret@1 in reward units):
+
+TPDWIS (`run_iw.py --iw_type=step_wis_termination --ext=zero`)
+
+| reward | Spearman (old -> fixed) | mean absolute error (old -> fixed) | regret@1 (old -> fixed) | max change of a pure pursuit estimate |
+|---|---|---|---|---|
+| progress | 0.81 -> 0.73 | 2.89 -> 3.40 | 0.00 -> 0.00 | 18% |
+| checkpoint | 0.70 -> 0.70 | 4.76 -> 5.30 | 0.00 -> 0.00 | 22% |
+| lifetime | 0.45 -> 0.51 | 7.23 -> 7.67 | 0.00 -> 0.00 | 16% |
+| min_act | 0.66 -> 0.57 | 7.35 -> 8.20 | 16.95 -> 16.95 | 30% |
+
+PDWIS (Mean) (`run_iw.py --iw_type=step_wis --ext=mean`)
+
+| reward | Spearman (old -> fixed) | mean absolute error (old -> fixed) | regret@1 (old -> fixed) | max change of a pure pursuit estimate |
+|---|---|---|---|---|
+| progress | 0.67 -> 0.67 | 4.90 -> 5.17 | 0.00 -> 0.00 | 10% |
+| checkpoint | 0.63 -> 0.57 | 6.43 -> 6.85 | 0.00 -> 0.00 | 10% |
+| lifetime | 0.31 -> 0.17 | 11.31 -> 12.16 | 0.00 -> 0.95 | 11% |
+| min_act | 0.59 -> 0.61 | 9.65 -> 10.24 | 16.95 -> 16.95 | 15% |
+
+The last column is the largest change of a single pure pursuit estimate relative to its ground truth value; the follow-the-gap estimates are unchanged. With the fix the IS estimates get slightly worse: the mean absolute error increases by 0.3 to 0.9 in all cases, the rank correlation drops in 4 of the 8 cases, rises in 2 and is unchanged in 2, and the selected best policy only changes in one case. DR, FQE and the model-based methods are affected as well but have not been re-run.
+
 # Installation with Docker
 
 ```

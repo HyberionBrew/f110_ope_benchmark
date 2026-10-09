@@ -11,7 +11,7 @@
 [submodule "stochastic_ftg_agents"]
 	path = stochastic_ftg_agents
 	url = https://github.com/HyberionBrew/stochastic_ftg_agents.git
-	branch = dev
+	branch = ope-benchmark
 [submodule "ope_methods"]
 	path = ope_methods
 	url = https://github.com/HyberionBrew/f110_ope_methods.git

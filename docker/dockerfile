@@ -31,7 +31,7 @@ RUN mkdir -p ~/.f110_rl_datasets
 RUN pip install gdown
 
 # Download the file from Google Drive using gdown
-RUN gdown --id 1ryaq4F3hHIo_klvlj0KlkDBZ9Zd5qI0Q -O ~/.f110_rl_datasets/f110-real-stoch-v2.zip
+RUN gdown 1ryaq4F3hHIo_klvlj0KlkDBZ9Zd5qI0Q -O ~/.f110_rl_datasets/f110-real-stoch-v2.zip
 
 # Unzip the downloaded file
 RUN unzip ~/.f110_rl_datasets/f110-real-stoch-v2.zip -d ~/.f110_rl_datasets
